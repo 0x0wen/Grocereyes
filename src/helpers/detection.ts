@@ -194,3 +194,121 @@ export const detectVideo = (
 
   detectFrame();
 };
+
+export const detectTensor = async (
+  source: tf.Tensor3D | tf.Tensor4D,
+  model: DetectionModel,
+  callback: () => void = () => {}
+): Promise<any> => {
+  const [modelWidth, modelHeight] = model.inputShape.slice(1, 3);
+
+  tf.engine().startScope();
+
+  // Handle input tensor preprocessing
+  const processInput = (inputTensor: tf.Tensor3D | tf.Tensor4D): tf.Tensor => {
+    return tf.tidy(() => {
+      // If input is 3D (single image), expand dims to make it 4D (batch)
+      let processingTensor = inputTensor;
+      if (inputTensor.rank === 3) {
+        processingTensor = tf.expandDims(inputTensor, 0);
+      }
+
+      // Ensure tensor is in the correct format and size
+      const resized = tf.image.resizeBilinear(processingTensor as tf.Tensor4D, [
+        modelHeight,
+        modelWidth,
+      ]);
+
+      // Normalize the values to [0, 1]
+      const normalized = tf.div(resized, 255);
+
+      return normalized;
+    });
+  };
+
+  // Process input tensor
+  const input = processInput(source);
+  const res: tf.Tensor = model.net.execute(input) as tf.Tensor;
+
+  console.log("Model output shape:", res.shape);
+
+  // Process detection boxes
+  const boxes: DetectionBoxes = tf.tidy(() => {
+    // First 4 elements are x, y, w, h
+    const bboxes = res.slice([0, 0, 0], [1, 4, -1]);
+    const scores = res.slice([0, 4, 0], [1, -1, -1]);
+
+    // Transpose boxes to [batch, detection, coords]
+    const bboxesReshaped = bboxes.transpose([0, 2, 1]);
+    const scoresReshaped = scores.transpose([0, 2, 1]);
+
+    // Get confidence scores and class indices
+    const classScores = scoresReshaped.max(2);
+    const classIndices = scoresReshaped.argMax(2);
+
+    // Process boxes
+    const bboxData = bboxesReshaped.squeeze();
+    const x = bboxData.slice([0, 0], [-1, 1]);
+    const y = bboxData.slice([0, 1], [-1, 1]);
+    const w = bboxData.slice([0, 2], [-1, 1]);
+    const h = bboxData.slice([0, 3], [-1, 1]);
+
+    // Convert xywh to xyxy format
+    const x1 = tf.sub(x, tf.div(w, 2));
+    const y1 = tf.sub(y, tf.div(h, 2));
+    const x2 = tf.add(x1, w);
+    const y2 = tf.add(y1, h);
+
+    return {
+      boxes: tf.concat([y1, x1, y2, x2], 1) as tf.Tensor2D,
+      scores: classScores.squeeze() as tf.Tensor1D,
+      classes: classIndices.squeeze() as tf.Tensor1D,
+    };
+  });
+
+  // Apply non-max suppression
+  const nms = await tf.image.nonMaxSuppressionAsync(
+    boxes.boxes,
+    boxes.scores,
+    500,
+    0.3,
+    0.2
+  );
+
+  // Gather the surviving detection indices
+  const scores_data = Array.from(boxes.scores.gather(nms).dataSync());
+  const boxes_data = boxes.boxes.gather(nms, 0).dataSync();
+  const boxes_matrix = [];
+
+  for (let i = 0; i < boxes_data.length; i += 4) {
+    let box = [];
+    for (let j = 0; j < 4; j++) {
+      box.push(Number(boxes_data[i + j]));
+    }
+    boxes_matrix.push(box);
+  }
+
+  const classes_data = Array.from(boxes.classes.gather(nms, 0).dataSync());
+  const classes_data_label: string[] = classes_data.map(
+    (index) => labels[index]
+  );
+
+  console.log("Detected classes:", classes_data_label);
+  console.log("Detected scores:", scores_data);
+  console.log("Detected boxes:", boxes_matrix);
+
+  const assistant = new KMeansShoppingAssistant(640, 480);
+  const result = assistant.processFrame(
+    boxes_matrix,
+    classes_data_label,
+    scores_data
+  );
+
+  // Cleanup
+  tf.dispose([input, res, boxes.boxes, boxes.scores, boxes.classes, nms]);
+
+  callback();
+  tf.engine().endScope();
+
+  return result;
+};

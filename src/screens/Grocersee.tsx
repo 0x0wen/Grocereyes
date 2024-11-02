@@ -1,8 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
-import { StyleSheet, Text, View, Dimensions, Platform } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  Dimensions,
+  Platform,
+  TouchableOpacity,
+} from "react-native";
 import { Camera } from "expo-camera";
 import * as tf from "@tensorflow/tfjs";
-import * as posedetection from "@tensorflow-models/pose-detection";
 import * as ScreenOrientation from "expo-screen-orientation";
 import {
   bundleResourceIO,
@@ -13,6 +19,7 @@ import { ExpoWebGLRenderingContext } from "expo-gl";
 import { CameraType } from "expo-camera/build/Camera.types";
 import Button from "../components/Button";
 import { speak } from "../helpers/accessibility";
+import { detect, DetectionModel, detectTensor } from "../helpers/detection";
 
 // Initialize TensorCamera
 const TensorCamera = cameraWithTensors(Camera);
@@ -40,8 +47,11 @@ const LOAD_MODEL_FROM_BUNDLE = false;
 export default function Grocersee() {
   const cameraRef = useRef(null);
   const [tfReady, setTfReady] = useState(false);
-  const [model, setModel] = useState<posedetection.PoseDetector>();
-  const [poses, setPoses] = useState<posedetection.Pose[]>();
+  const [model, setModel] = useState({
+    net: null as tf.GraphModel | null,
+    inputShape: [1, 0, 0, 3],
+  });
+  const [detection, setDetection] = useState<string>("");
   const [orientation, setOrientation] =
     useState<ScreenOrientation.Orientation>();
   const [cameraType, setCameraType] = useState<CameraType>(CameraType.front);
@@ -54,9 +64,35 @@ export default function Grocersee() {
       try {
         console.log("Starting initialization...");
 
+        const modelJson = require("../../model/model.json");
+        const modelWeights1 = require("../../model/group1-shard1of3.bin");
+        const modelWeights2 = require("../../model/group1-shard2of3.bin");
+        const modelWeights3 = require("../../model/group1-shard3of3.bin");
+        const modelUrl = bundleResourceIO(modelJson, [
+          modelWeights1,
+          modelWeights2,
+          modelWeights3,
+        ]);
+
         // Initialize TensorFlow.js
-        await tf.ready();
-        console.log("TF.js ready");
+        tf.ready().then(async () => {
+          const yolo11 = await tf.loadGraphModel(modelUrl);
+
+          const dummyInput = tf.ones(yolo11.inputs[0].shape as number[]);
+          const warmupResults = yolo11.execute(dummyInput);
+
+          console.log("Model loaded successfully");
+          setModel({
+            net: yolo11,
+            inputShape: yolo11.inputs[0].shape as number[],
+          });
+
+          setTfReady(true);
+
+          console.log("TF.js ready");
+
+          tf.dispose([warmupResults, dummyInput]); // cleanup memory
+        });
 
         // Request camera permissions first
         const { status } = await Camera.requestCameraPermissionsAsync();
@@ -74,34 +110,6 @@ export default function Grocersee() {
         ScreenOrientation.addOrientationChangeListener((event) => {
           setOrientation(event.orientationInfo.orientation);
         });
-
-        // Load MoveNet model
-        const movenetModelConfig: posedetection.MoveNetModelConfig = {
-          modelType: posedetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-          enableSmoothing: true,
-          modelUrl: undefined,
-        };
-
-        if (LOAD_MODEL_FROM_BUNDLE) {
-          const modelJson = require("../../model/model.json");
-          const modelWeights1 = require("../../model/group1-shard1of3.bin");
-          const modelWeights2 = require("../../model/group1-shard2of3.bin");
-          const modelWeights3 = require("../../model/group1-shard3of3.bin");
-          movenetModelConfig.modelUrl = bundleResourceIO(modelJson, [
-            modelWeights1,
-            modelWeights2,
-            modelWeights3,
-          ]);
-        }
-
-        console.log("Loading pose detection model...");
-        const detector = await posedetection.createDetector(
-          posedetection.SupportedModels.MoveNet,
-          movenetModelConfig,
-        );
-        console.log("Model loaded successfully");
-        setModel(detector);
-        setTfReady(true);
       } catch (error) {
         console.error("Error in prepare:", error);
       }
@@ -120,14 +128,16 @@ export default function Grocersee() {
   const handleCameraStream = async (
     images: IterableIterator<tf.Tensor3D>,
     updatePreview: () => void,
-    gl: ExpoWebGLRenderingContext,
+    gl: ExpoWebGLRenderingContext
   ) => {
     const loop = async () => {
-      if (!model) {
+      if (!model.net) {
         console.log("Model not loaded yet");
         rafId.current = requestAnimationFrame(loop);
         return;
       }
+
+      console.log("Processing camera stream...");
 
       try {
         const imageTensor = images.next().value;
@@ -140,15 +150,28 @@ export default function Grocersee() {
 
         const startTs = Date.now();
 
-        // Process the tensor
+        // Process the tensor directly
         const processedTensor = tf.tidy(() => {
-          return imageTensor.expandDims(0);
+          // Normalize and resize the tensor if needed
+          return imageTensor.expandDims(0).div(255.0);
         });
 
-        const poses = await model.estimatePoses(processedTensor);
-        const latency = Date.now() - startTs;
+        // Run detection directly with the tensor
+        if (model.net) {
+          const result = await detectTensor(
+            processedTensor,
+            model as DetectionModel
+          );
 
-        setPoses(poses);
+          // Log and handle detection results
+          if (result) {
+            console.log("Detection Result:", result);
+            setDetection(result); // Store the result in state if needed
+          }
+        }
+
+        const latency = Date.now() - startTs;
+        console.log("Detection latency:", latency, "ms");
 
         // Cleanup tensors
         tf.dispose([imageTensor, processedTensor]);
@@ -171,50 +194,21 @@ export default function Grocersee() {
     loop();
   };
 
-  const renderPose = () => {
-    if (poses != null && poses.length > 0) {
-      const keypoints = poses[0].keypoints
-        .filter((k) => (k.score ?? 0) > MIN_KEYPOINT_SCORE)
-        .map((k) => {
-          const flipX = IS_ANDROID || cameraType === CameraType.back;
-          const x = flipX ? getOutputTensorWidth() - k.x : k.x;
-          const y = k.y;
-          const cx =
-            (x / getOutputTensorWidth()) *
-            (isPortrait() ? CAM_PREVIEW_WIDTH : CAM_PREVIEW_HEIGHT);
-          const cy =
-            (y / getOutputTensorHeight()) *
-            (isPortrait() ? CAM_PREVIEW_HEIGHT : CAM_PREVIEW_WIDTH);
-
-          return (
-            <Circle
-              key={`skeletonkp_${k.name}`}
-              cx={cx}
-              cy={cy}
-              r="4"
-              strokeWidth="2"
-              fill="#00AA00"
-              stroke="white"
-            />
-          );
-        });
-
-      return <Svg style={styles.svg}>{keypoints}</Svg>;
-    }
-    return <View></View>;
-  };
-
   const renderCameraTypeSwitcher = () => (
-    <View style={styles.cameraTypeSwitcher} onTouchEnd={handleSwitchCameraType}>
+    <TouchableOpacity
+      style={styles.cameraTypeSwitcher}
+      onPress={handleSwitchCameraType}
+    >
       <Text>
         Switch to {cameraType === CameraType.front ? "back" : "front"} camera
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 
   const handleSwitchCameraType = () => {
-    setCameraType(
-      cameraType === CameraType.front ? CameraType.back : CameraType.front,
+    console.log("Switching camera from:", cameraType);
+    setCameraType((currentType) =>
+      currentType === CameraType.front ? CameraType.back : CameraType.front
     );
   };
 
@@ -282,14 +276,27 @@ export default function Grocersee() {
         cameraTextureWidth={texture.width}
         cameraTextureHeight={texture.height}
       />
-      {renderPose()}
       {renderCameraTypeSwitcher()}
-      <Button 
-        onSingleClick={()=>speak('Anda dapat mengarahkan kamera anda ke rak dengan beberapa barang ataupun ke satu barang yang anda pegang untuk mendapatkan audio feedback terkait apa yang terlihat.')}
-        onDoubleClick={()=>console.log('Button is clicked twice!')}
-        onTripleClick={()=>console.log('Button is clicked three times!')}  
-        icon={{name:'question', size:40}} 
-        style={{button:{backgroundColor:'#000000', position:'absolute',bottom:30,right:30, padding:20, borderRadius:100}}} />
+      <Button
+        onSingleClick={() =>
+          speak(
+            "Anda dapat mengarahkan kamera anda ke rak dengan beberapa barang ataupun ke satu barang yang anda pegang untuk mendapatkan audio feedback terkait apa yang terlihat."
+          )
+        }
+        onDoubleClick={() => console.log("Button is clicked twice!")}
+        onTripleClick={() => console.log("Button is clicked three times!")}
+        icon={{ name: "question", size: 40 }}
+        style={{
+          button: {
+            backgroundColor: "#000000",
+            position: "absolute",
+            bottom: 30,
+            right: 30,
+            padding: 20,
+            borderRadius: 100,
+          },
+        }}
+      />
     </View>
   );
 }
@@ -346,5 +353,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     padding: 8,
     zIndex: 20,
+    elevation: 3, // Add elevation for Android
   },
 });
