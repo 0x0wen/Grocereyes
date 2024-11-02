@@ -1,36 +1,26 @@
 {
+  "name": "pose-detection-expo",
+  "displayName": "pose-detection-expo",
   "expo": {
-    "name": "base",
-    "slug": "base",
+    "name": "pose-detection-expo",
+    "slug": "pose-detection-expo",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
+    "jsEngine": "jsc",
+    "assetBundlePatterns": ["**/*"],
     "plugins": [
-      "expo-router"
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
+        }
+      ]
     ],
-    "experiments": {
-      "typedRoutes": true
+    "android": {
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.sadmansayem.posedetectionexpo"
     }
   }
 }

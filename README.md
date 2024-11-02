@@ -1,50 +1,41 @@
-# Welcome to your Expo app 👋
+# Overview
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A modified version of [TFJS Pose Detection][posedetection] model
+([MoveNet.SinglePose.Ligntning][tfhub]) using
+[TFJS React Native][tfjs-react-native] in an Expo project. It supports both
+portrait and landscape mode with front and back camera. Only the keypoints are
+rendered in the demo.
 
-## Get started
+# Note
 
-1. Install dependencies
+This project uses Expo SDK 49 and jsc instead of Hermes. FPS is very low on my phone, around 3-4 FPS.
 
-   ```bash
-   npm install
-   ```
+I updated Camera.Constants.Type to CameraType.front/back.
 
-2. Start the app
+Added 3 additional props to TensorCamera according to [this](https://js.tensorflow.org/api_react_native/0.2.1/#Media-Camera) documentation.
 
-   ```bash
-    npx expo start
-   ```
+Also updated tsconfig.json to use settings for Expo SDK 49.
 
-In the output, you'll find options to open the app in a
+Update 9/23/2023: Stopping development on this project for now. Will experiment with Flutter and Firebase MLkit.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+# Installation
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+To run it locally:
 
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+$ yarn
+$ yarn start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Then scan the QR code to open it in the `Expo Go` app.
 
-## Learn more
+If the app crashes on startup, see [here][readme] for more info.
 
-To learn more about developing your project with Expo, look at the following resources:
+<img src="screenshot_portrait.jpg" width="250">
+<img src="screenshot_landscape.jpg" width="500">
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+[posedetection]: https://github.com/tensorflow/tfjs-models/tree/master/pose-detection
+[tfhub]: https://tfhub.dev/google/tfjs-model/movenet/singlepose/lightning/4
+[tfjs-react-native]: https://github.com/tensorflow/tfjs/tree/master/tfjs-react-native
+[screenshots]: https://photos.app.goo.gl/U972ww4HpaKPK6jEA
+[readme]: https://github.com/tensorflow/tfjs-examples/blob/master/react-native/README.md
