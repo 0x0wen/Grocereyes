@@ -11,10 +11,10 @@ export default function HomeScreen({navigation}:{navigation:any}) {
     <View style={styles.root}>
       <Button
         onSingleClick={() => {
-          speak("Navigasi ke fitur Grocersee");
+          speak("Navigasi ke fitur Grosersee");
         }}
         onDoubleClick={()=>
-          navigation.navigate('Grosersee')
+          navigation.navigate('Grocersee')
         }
         onTripleClick={()=>console.log("Button is clicked three times!")}
         style={{button:styles.button}}
