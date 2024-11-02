@@ -1,0 +1,45 @@
+description: Ultralytics YOLO11n model trained on Recipe-Ingredients-CN-4/data.yaml
+author: Ultralytics
+date: '2024-11-02T08:49:25.628174'
+version: 8.3.27
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: bay_leaves
+  1: beef
+  2: bell_pepper
+  3: cabbage
+  4: carrot
+  5: cauliflower
+  6: chicken
+  7: chickpeas
+  8: coriander
+  9: cucumber
+  10: egg
+  11: eggplant
+  12: fish
+  13: garlic
+  14: ginger
+  15: green_chili_pepper
+  16: green_onion
+  17: kumquat
+  18: lemon
+  19: mutton
+  20: okra
+  21: onion
+  22: pork
+  23: potato
+  24: pumpkin
+  25: radish
+  26: salt
+  27: shrimp
+  28: small_pepper
+  29: tofu
+  30: tomao
+  31: turmeric
