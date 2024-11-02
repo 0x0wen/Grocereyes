@@ -8,7 +8,7 @@ export default function Button({
   onSingleClick,
   onDoubleClick,
   onTripleClick,
-  maxDelay = 300,
+  maxDelay = 500,
   style,
   icon,
 }: {
