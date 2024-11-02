@@ -39,8 +39,8 @@ const CAM_PREVIEW_HEIGHT = CAM_PREVIEW_WIDTH / (IS_IOS ? 9 / 16 : 3 / 4);
 
 // Constants
 const MIN_KEYPOINT_SCORE = 0.3;
-const OUTPUT_TENSOR_WIDTH = 180;
-const OUTPUT_TENSOR_HEIGHT = OUTPUT_TENSOR_WIDTH / (IS_IOS ? 9 / 16 : 3 / 4);
+const OUTPUT_TENSOR_WIDTH = 640;
+const OUTPUT_TENSOR_HEIGHT = OUTPUT_TENSOR_WIDTH / (IS_IOS ? 9 / 16 : 4 / 4);
 const AUTO_RENDER = true;
 const LOAD_MODEL_FROM_BUNDLE = false;
 
@@ -137,11 +137,12 @@ export default function Grocersee() {
         return;
       }
 
-      console.log("Processing camera stream...");
-
       try {
         const imageTensor = images.next().value;
 
+        console.log("Image tensor shape:", imageTensor);
+
+        // Remove the normalization here - just pass the raw tensor
         if (!imageTensor) {
           console.log("No image tensor received");
           rafId.current = requestAnimationFrame(loop);
@@ -150,31 +151,22 @@ export default function Grocersee() {
 
         const startTs = Date.now();
 
-        // Process the tensor directly
-        const processedTensor = tf.tidy(() => {
-          // Normalize and resize the tensor if needed
-          return imageTensor.expandDims(0).div(255.0);
-        });
-
-        // Run detection directly with the tensor
         if (model.net) {
           const result = await detectTensor(
-            processedTensor,
+            imageTensor as tf.Tensor4D,
             model as DetectionModel
           );
 
-          // Log and handle detection results
           if (result) {
             console.log("Detection Result:", result);
-            setDetection(result); // Store the result in state if needed
+            setDetection(result);
           }
         }
 
         const latency = Date.now() - startTs;
         console.log("Detection latency:", latency, "ms");
 
-        // Cleanup tensors
-        tf.dispose([imageTensor, processedTensor]);
+        tf.dispose(imageTensor);
 
         if (rafId.current === 0) {
           return;

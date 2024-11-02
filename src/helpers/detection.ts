@@ -127,9 +127,15 @@ export const detect = async (
     };
   });
 
+  // Add this debug code
+  const scoresBeforeNMS = await boxes.scores.data();
+  const boxesBeforeNMS = await boxes.boxes.data();
+  console.log("Scores before NMS:", scoresBeforeNMS.slice(0, 10));
+  console.log("Boxes before NMS:", boxesBeforeNMS.slice(0, 10));
+
   // Apply non-max suppression
   const nms = await tf.image.nonMaxSuppressionAsync(
-    boxes.boxes,
+    boxes.boxes as tf.Tensor2D,
     boxes.scores,
     500,
     0.3,
@@ -156,7 +162,6 @@ export const detect = async (
 
   console.log("Detected classes:", classes_data_label);
   console.log("Detected scores:", scores_data);
-  console.log("Detected boxes:", boxes_matrix);
 
   const assistant = new KMeansShoppingAssistant(640, 480);
   const result = assistant.processFrame(
@@ -195,91 +200,111 @@ export const detectVideo = (
   detectFrame();
 };
 
+interface DetectionResult {
+  boxes: Float32Array;
+  scores: Float32Array;
+  classes: Float32Array;
+  originalSize: {
+    width: number;
+    height: number;
+  };
+}
+
+interface BoxPredictions {
+  boxes: tf.Tensor;
+  scores: tf.Tensor1D;
+  classes: tf.Tensor1D;
+}
+
 export const detectTensor = async (
-  source: tf.Tensor3D | tf.Tensor4D,
-  model: DetectionModel,
-  callback: () => void = () => {}
-): Promise<any> => {
+  inputTensor: tf.Tensor3D | tf.Tensor4D,
+  model: DetectionModel
+): Promise<string> => {
   const [modelWidth, modelHeight] = model.inputShape.slice(1, 3);
 
   tf.engine().startScope();
 
-  // Handle input tensor preprocessing
-  const processInput = (inputTensor: tf.Tensor3D | tf.Tensor4D): tf.Tensor => {
-    return tf.tidy(() => {
-      // If input is 3D (single image), expand dims to make it 4D (batch)
-      let processingTensor = inputTensor;
-      if (inputTensor.rank === 3) {
-        processingTensor = tf.expandDims(inputTensor, 0);
-      }
+  const processedTensor = tf.tidy(() => {
+    let resized = inputTensor;
+    if (
+      inputTensor.shape[1] !== modelWidth ||
+      inputTensor.shape[2] !== modelHeight
+    ) {
+      resized = tf.image.resizeBilinear(inputTensor, [modelWidth, modelHeight]);
+    }
 
-      // Ensure tensor is in the correct format and size
-      const resized = tf.image.resizeBilinear(processingTensor as tf.Tensor4D, [
-        modelHeight,
-        modelWidth,
-      ]);
+    return resized.expandDims(0).div(255.0) as tf.Tensor4D;
+  });
 
-      // Normalize the values to [0, 1]
-      const normalized = tf.div(resized, 255);
+  const originalWidth = inputTensor.shape[1];
+  const originalHeight = inputTensor.shape[2];
 
-      return normalized;
-    });
-  };
+  // Add padding logic here
+  // const processedTensor: tf.Tensor4D = tf.tidy((): tf.Tensor4D => {
+  //   // Get original dimensions
+  //   const [h, w] = inputTensor.shape.slice(0, 2);
+  //   const maxSize = Math.max(w, h);
 
-  // Process input tensor
-  const input = processInput(source);
-  const res: tf.Tensor = model.net.execute(input) as tf.Tensor;
+  //   // Pad the image to make it square
+  //   const paddedTensor = inputTensor.pad([
+  //     [0, maxSize - h], // Padding for height
+  //     [0, maxSize - w], // Padding for width
+  //     [0, 0], // No padding for channels
+  //   ]);
 
-  console.log("Model output shape:", res.shape);
+  //   // Now resize the square padded image
+  //   const resized = tf.image.resizeBilinear(paddedTensor as tf.Tensor3D, [
+  //     modelWidth,
+  //     modelHeight,
+  //   ]);
 
-  // Process detection boxes
-  const boxes: DetectionBoxes = tf.tidy(() => {
-    // First 4 elements are x, y, w, h
-    const bboxes = res.slice([0, 0, 0], [1, 4, -1]);
-    const scores = res.slice([0, 4, 0], [1, -1, -1]);
+  //   // Add batch dimension and normalize
+  //   return resized.expandDims(0).div(255.0);
 
-    // Transpose boxes to [batch, detection, coords]
-    const bboxesReshaped = bboxes.transpose([0, 2, 1]);
-    const scoresReshaped = scores.transpose([0, 2, 1]);
+  console.log("Processed tensor shape:", processedTensor);
 
-    // Get confidence scores and class indices
-    const classScores = scoresReshaped.max(2);
-    const classIndices = scoresReshaped.argMax(2);
+  const res: tf.Tensor = model.net.execute(processedTensor) as tf.Tensor;
 
-    // Process boxes
-    const bboxData = bboxesReshaped.squeeze();
-    const x = bboxData.slice([0, 0], [-1, 1]);
-    const y = bboxData.slice([0, 1], [-1, 1]);
-    const w = bboxData.slice([0, 2], [-1, 1]);
-    const h = bboxData.slice([0, 3], [-1, 1]);
+  const boxes: BoxPredictions = tf.tidy(() => {
+    const bboxes: tf.Tensor = res.slice([0, 0, 0], [1, 4, -1]);
+    const scores: tf.Tensor = res.slice([0, 4, 0], [1, -1, -1]);
+    const bboxesReshaped: tf.Tensor = bboxes.transpose([0, 2, 1]);
+    const scoresReshaped: tf.Tensor = scores.transpose([0, 2, 1]);
+    const classScores: tf.Tensor = scoresReshaped.max(2);
+    const classIndices: tf.Tensor = scoresReshaped.argMax(2);
+    const bboxData: tf.Tensor = bboxesReshaped.squeeze();
 
-    // Convert xywh to xyxy format
-    const x1 = tf.sub(x, tf.div(w, 2));
-    const y1 = tf.sub(y, tf.div(h, 2));
-    const x2 = tf.add(x1, w);
-    const y2 = tf.add(y1, h);
+    const x: tf.Tensor = bboxData.slice([0, 0], [-1, 1]);
+    const y: tf.Tensor = bboxData.slice([0, 1], [-1, 1]);
+    const w: tf.Tensor = bboxData.slice([0, 2], [-1, 1]);
+    const h: tf.Tensor = bboxData.slice([0, 3], [-1, 1]);
+
+    const x1: tf.Tensor = tf.sub(x, tf.div(w, 2));
+    const y1: tf.Tensor = tf.sub(y, tf.div(h, 2));
+    const x2: tf.Tensor = tf.add(x1, w);
+    const y2: tf.Tensor = tf.add(y1, h);
 
     return {
-      boxes: tf.concat([y1, x1, y2, x2], 1) as tf.Tensor2D,
+      boxes: tf.concat([y1, x1, y2, x2], 1),
       scores: classScores.squeeze() as tf.Tensor1D,
       classes: classIndices.squeeze() as tf.Tensor1D,
     };
   });
 
-  // Apply non-max suppression
-  const nms = await tf.image.nonMaxSuppressionAsync(
-    boxes.boxes,
+  const nms: tf.Tensor1D = await tf.image.nonMaxSuppressionAsync(
+    boxes.boxes as tf.Tensor2D,
     boxes.scores,
-    500,
-    0.3,
-    0.2
+    500, // Reduced from 500 to 200 to be more strict
+    0.3, // IOU threshold
+    0.2 // Score threshold
   );
 
-  // Gather the surviving detection indices
+  // Debug logging after NMS
   const scores_data = Array.from(boxes.scores.gather(nms).dataSync());
   const boxes_data = boxes.boxes.gather(nms, 0).dataSync();
-  const boxes_matrix = [];
+  const classes_data = Array.from(boxes.classes.gather(nms, 0).dataSync());
 
+  const boxes_matrix = [];
   for (let i = 0; i < boxes_data.length; i += 4) {
     let box = [];
     for (let j = 0; j < 4; j++) {
@@ -288,14 +313,12 @@ export const detectTensor = async (
     boxes_matrix.push(box);
   }
 
-  const classes_data = Array.from(boxes.classes.gather(nms, 0).dataSync());
   const classes_data_label: string[] = classes_data.map(
     (index) => labels[index]
   );
 
   console.log("Detected classes:", classes_data_label);
   console.log("Detected scores:", scores_data);
-  console.log("Detected boxes:", boxes_matrix);
 
   const assistant = new KMeansShoppingAssistant(640, 480);
   const result = assistant.processFrame(
@@ -304,10 +327,15 @@ export const detectTensor = async (
     scores_data
   );
 
-  // Cleanup
-  tf.dispose([input, res, boxes.boxes, boxes.scores, boxes.classes, nms]);
+  tf.dispose([
+    res,
+    processedTensor,
+    boxes.boxes,
+    boxes.scores,
+    boxes.classes,
+    nms,
+  ]);
 
-  callback();
   tf.engine().endScope();
 
   return result;
