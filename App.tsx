@@ -22,17 +22,14 @@ export default function App() {
         <Stack.Screen 
           name="Home" 
           component={HomeScreen} 
-          options={{ title: 'Home' }}
         />
         <Stack.Screen 
           name="Grocersee" 
           component={Grocersee}
-          options={{ title: 'Grocersee' }}
         />
         <Stack.Screen 
           name="Grocerlist" 
           component={Grocerlist}
-          options={{ title: 'Grocerlist' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

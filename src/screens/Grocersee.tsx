@@ -11,6 +11,8 @@ import {
 import Svg, { Circle } from "react-native-svg";
 import { ExpoWebGLRenderingContext } from "expo-gl";
 import { CameraType } from "expo-camera/build/Camera.types";
+import Button from "../components/Button";
+import { speak } from "../helpers/accessibility";
 
 // Initialize TensorCamera
 const TensorCamera = cameraWithTensors(Camera);
@@ -282,6 +284,12 @@ export default function Grocersee() {
       />
       {renderPose()}
       {renderCameraTypeSwitcher()}
+      <Button 
+        onSingleClick={()=>speak('Anda dapat mengarahkan kamera anda ke rak dengan beberapa barang ataupun ke satu barang yang anda pegang untuk mendapatkan audio feedback terkait apa yang terlihat.')}
+        onDoubleClick={()=>console.log('Button is clicked twice!')}
+        onTripleClick={()=>console.log('Button is clicked three times!')}  
+        icon={{name:'question', size:40}} 
+        style={{button:{backgroundColor:'#000000', position:'absolute',bottom:30,right:30, padding:20, borderRadius:100}}} />
     </View>
   );
 }

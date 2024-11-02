@@ -77,12 +77,9 @@ const Grocerlist: React.FC = () => {
     }
   };
 
-  const handleInfo = () =>{
-    speak('')
-  }
   return (
     <View style={styles.container}>
-    <Button icon={{name:'plus',size:50}} onPress={startRecording} style={{button: styles.addButton, icon: {color:'#000000'}}} speech='Tambahkan belanjaan'/>
+    <Button icon={{name:'plus',size:50}} onDoubleClick={startRecording} style={{button: styles.addButton, icon: {color:'#000000'}}} onSingleClick={()=>speak('Tambahkan belanjaan')} onTripleClick={()=>console.log("Clicked three times!")}/>
       <FlatList
         data={recordedAudios}
         keyExtractor={(item) => item.id}
@@ -114,7 +111,7 @@ const Grocerlist: React.FC = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-      <Button onPress={()=>console.log('info is clicked!')} icon={{name:'question', size:40}} style={{button:{backgroundColor:'#000000', position:'absolute',bottom:30,right:30, padding:20, borderRadius:100}}} speech={'Anda dapat menekan tombol di atas untuk menambahkan audio. Setiap audio yang terekam ditampilkan dari atas ke bawah, tepat di bawah tombol menambahkan audio. Anda dapat memainkan audio dengan menekan salah satu dari daftar audio yang ditampilkan.'}/>
+      <Button onTripleClick={()=>console.log('Button is clicked three times!')} onDoubleClick={()=>console.log('Button is clicked twice!')} icon={{name:'question', size:40}} style={{button:{backgroundColor:'#000000', position:'absolute',bottom:30,right:30, padding:20, borderRadius:100}}} onSingleClick={()=>speak('Anda dapat menekan tombol di atas untuk menambahkan audio. Setiap audio yang terekam ditampilkan dari atas ke bawah, tepat di bawah tombol menambahkan audio. Anda dapat memainkan audio dengan menekan salah satu dari daftar audio yang ditampilkan.')}/>
     </View>
   );
 };

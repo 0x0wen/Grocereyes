@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import { useEffect } from "react";
 import Button from "../components/Button";
+import { speak } from "expo-speech";
 
 export default function HomeScreen({navigation}:{navigation:any}) {
   useEffect(() => {
@@ -9,20 +10,24 @@ export default function HomeScreen({navigation}:{navigation:any}) {
   return (
     <View style={styles.root}>
       <Button
-        onPress={() => {
-          console.log("button clicked!");
-          navigation.navigate('Grocersee');
+        onSingleClick={() => {
+          speak("Navigasi ke fitur Grocersee");
         }}
-        speech="Minggir lu miskin"
+        onDoubleClick={()=>
+          navigation.navigate('Grosersee')
+        }
+        onTripleClick={()=>console.log("Button is clicked three times!")}
         style={{button:styles.button}}
         icon={{ name: "camera", size: 240 }}
       />
       <Button
-        onPress={() => {
-          console.log("button clicked!");
-          navigation.navigate('Grocerlist');
+        onSingleClick={() => {
+          speak("Navigasi ke fitur Groserlist");
         }}
-        speech="Minggir lu miskin"
+        onDoubleClick={()=>
+          navigation.navigate('Grocerlist')
+        }
+        onTripleClick={()=>console.log("Button is clicked three times!")}
         style={{button:styles.button}}
         icon={{ name: "shoppingcart", size: 240 }}
       />
