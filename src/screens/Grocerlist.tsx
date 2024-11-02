@@ -17,6 +17,7 @@ interface RecordedAudio {
   uri: string;
   done:boolean;
   name: string;
+  status: boolean;
 }
 
 const Grocerlist: React.FC = () => {
@@ -74,7 +75,8 @@ const Grocerlist: React.FC = () => {
             id: Date.now().toString(),
             uri,
             done: false,
-            name: `Belanjaan ${nextNumber}`
+            name: `Belanjaan ${nextNumber}`,
+            status: false,
           };
           return [newAudio,...prevAudios ];
         });
@@ -99,6 +101,16 @@ const Grocerlist: React.FC = () => {
     }
   };
 
+  const handleTripleClick = (id: string) => {
+    setRecordedAudios((prevAudios) => 
+      prevAudios.map((audio) => 
+        audio.id === id 
+          ? { ...audio, status: !audio.status }  // Toggle status
+          : audio
+      )
+    );
+    console.log("Audio button clicked three times!");
+  };
   return (
     <View style={styles.container}>
     <Button icon={{name:'plus',size:50}} onDoubleClick={startRecording} style={{button: styles.addButton, icon: {color:'#000000'}}} onSingleClick={()=>speak('Tambahkan belanjaan')} onTripleClick={()=>console.log("Clicked three times!")}/>
@@ -106,12 +118,12 @@ const Grocerlist: React.FC = () => {
         data={recordedAudios}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.audioCard}
-            onPress={() => playAudio(item.uri)}
-          >
-            <Text style={styles.audioText}>{item.name}</Text>
-          </TouchableOpacity>
+          <Button 
+            onSingleClick={()=>speak(item.status ? item.name + ' sudah dibeli.' : item.name)}
+            onDoubleClick={()=> {playAudio(item.uri);console.log("Audio button clicked two times!")}}
+            onTripleClick={() => handleTripleClick(item.id)}
+            icon={{name:'plus',size:50}}  
+            style={{button: {...styles.audioCard, backgroundColor: item.status ? '#00FF2F' : '#D2D2D2'}, icon: {color:'#000000'}}}  />
         )}
         contentContainerStyle={styles.listContainer}
       />
@@ -133,7 +145,7 @@ const Grocerlist: React.FC = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-      <Button onTripleClick={()=>console.log('Button is clicked three times!')} onDoubleClick={()=>console.log('Button is clicked twice!')} icon={{name:'question', size:40}} style={{button:{backgroundColor:'#000000', position:'absolute',bottom:30,right:30, padding:20, borderRadius:100}}} onSingleClick={()=>speak('Anda dapat menekan tombol di atas untuk menambahkan audio. Setiap audio yang terekam ditampilkan dari atas ke bawah, tepat di bawah tombol menambahkan audio. Anda dapat memainkan audio dengan menekan salah satu dari daftar audio yang ditampilkan.')}/>
+      <Button onTripleClick={()=>console.log('Button is clicked three times!')} onDoubleClick={()=>console.log('Button is clicked twice!')} icon={{name:'question', size:40}} style={{button:{backgroundColor:'#000000', position:'absolute',bottom:30,right:30, padding:20, borderRadius:100}}} onSingleClick={()=>speak('Anda dapat menekan tombol di atas untuk menambahkan audio. Setiap audio yang terekam ditampilkan dari atas ke bawah, tepat di bawah tombol menambahkan audio. Ketuk dua kali untuk memainkan audio, dan ketuk tiga kali untuk menandai belanjaan sudah dibeli pada salah satu audio.')}/>
     </View>
   );
 };
@@ -163,7 +175,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   audioCard: {
-    backgroundColor: '#D2D2D2',
     padding: 20,
     borderRadius: 8,
     marginBottom: 15,
