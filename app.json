@@ -6,17 +6,14 @@
     "slug": "pose-detection-expo",
     "version": "1.0.0",
     "jsEngine": "jsc",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "plugins": [
       [
         "expo-camera",
         {
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
         }
-      ],
-      "expo-router"
+      ]
     ],
     "android": {
       "permissions": [
