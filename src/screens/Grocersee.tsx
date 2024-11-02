@@ -30,7 +30,7 @@ const IS_IOS = Platform.OS === "ios";
 
 // Camera texture dimensions
 const texture = IS_ANDROID
-  ? { height: 1200, width: 1600 }
+  ? { height: 1920, width: 2560 }
   : { height: 1920, width: 1080 };
 
 // Camera preview dimensions
@@ -43,6 +43,8 @@ const OUTPUT_TENSOR_WIDTH = 640;
 const OUTPUT_TENSOR_HEIGHT = OUTPUT_TENSOR_WIDTH / (IS_IOS ? 9 / 16 : 4 / 4);
 const AUTO_RENDER = true;
 const LOAD_MODEL_FROM_BUNDLE = false;
+const TARGET_FPS = 0.3;
+const FRAME_INTERVAL = 1000 / TARGET_FPS;
 
 export default function Grocersee() {
   const cameraRef = useRef(null);
@@ -125,12 +127,24 @@ export default function Grocersee() {
     };
   }, []);
 
+  let lastFrameTime = Date.now();
+
   const handleCameraStream = async (
     images: IterableIterator<tf.Tensor3D>,
     updatePreview: () => void,
     gl: ExpoWebGLRenderingContext
   ) => {
     const loop = async () => {
+      const now = Date.now();
+      const elapsed = now - lastFrameTime;
+
+      if (elapsed < FRAME_INTERVAL) {
+        rafId.current = requestAnimationFrame(loop);
+        return;
+      }
+
+      lastFrameTime = now;
+
       if (!model.net) {
         console.log("Model not loaded yet");
         rafId.current = requestAnimationFrame(loop);
@@ -139,8 +153,6 @@ export default function Grocersee() {
 
       try {
         const imageTensor = images.next().value;
-
-        console.log("Image tensor shape:", imageTensor);
 
         // Remove the normalization here - just pass the raw tensor
         if (!imageTensor) {

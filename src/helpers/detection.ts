@@ -261,8 +261,6 @@ export const detectTensor = async (
   //   // Add batch dimension and normalize
   //   return resized.expandDims(0).div(255.0);
 
-  console.log("Processed tensor shape:", processedTensor);
-
   const res: tf.Tensor = model.net.execute(processedTensor) as tf.Tensor;
 
   const boxes: BoxPredictions = tf.tidy(() => {
@@ -294,9 +292,9 @@ export const detectTensor = async (
   const nms: tf.Tensor1D = await tf.image.nonMaxSuppressionAsync(
     boxes.boxes as tf.Tensor2D,
     boxes.scores,
-    500, // Reduced from 500 to 200 to be more strict
-    0.3, // IOU threshold
-    0.2 // Score threshold
+    3, // Reduced from 500 to 200 to be more strict
+    0.7, // IOU threshold
+    0.7 // Score threshold
   );
 
   // Debug logging after NMS
@@ -318,7 +316,7 @@ export const detectTensor = async (
   );
 
   console.log("Detected classes:", classes_data_label);
-  console.log("Detected scores:", scores_data);
+  // console.log("Detected scores:", scores_data);
 
   const assistant = new KMeansShoppingAssistant(640, 480);
   const result = assistant.processFrame(

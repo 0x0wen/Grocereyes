@@ -231,6 +231,7 @@ export class KMeansShoppingAssistant {
         content: "Tidak ada objek yang terdeteksi",
       };
     }
+    // only allow tomat, kubis, wortel, dan kentang
 
     // Prepare features for clustering
     const features = this.prepareFeatures(boxes, scores);
@@ -312,13 +313,30 @@ export class KMeansShoppingAssistant {
     };
   }
 
-  public generateVoiceMessage(messageType: string, content: string): string {
+  public generateVoiceMessage(
+    messageType: string,
+    content: string,
+    classes: string[]
+  ): string {
     switch (messageType) {
       case "no_detection":
         return "Silakan arahkan kamera ke bahan makanan";
       case "single_focus":
+        if (classes.includes("tomat")) {
+          return "Terlihat tomat di depan Anda";
+        }
+        if (classes.includes("kubis")) {
+          return "Terlihat kubis di depan Anda";
+        }
+        if (classes.includes("wortel")) {
+          return "Terlihat wortel di depan Anda";
+        }
+        if (classes.includes("kentang")) {
+          return "Terlihat kentang di depan Anda";
+        }
         return `Terlihat ${content} di depan Anda`;
       case "multiple_same":
+        content = "sayuran";
         return `Terlihat ${content}`;
       case "category_summary":
         return `Terlihat beberapa jenis bahan makanan: ${content}`;
@@ -333,7 +351,7 @@ export class KMeansShoppingAssistant {
     scores: number[]
   ): string {
     const { messageType, content } = this.analyzeFrame(boxes, classes, scores);
-    return this.generateVoiceMessage(messageType, content);
+    return this.generateVoiceMessage(messageType, content, classes);
   }
 }
 
