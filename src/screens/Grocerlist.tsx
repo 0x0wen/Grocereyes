@@ -16,6 +16,7 @@ interface RecordedAudio {
   id: string;
   uri: string;
   done:boolean;
+  name: string;
 }
 
 const Grocerlist: React.FC = () => {
@@ -44,6 +45,19 @@ const Grocerlist: React.FC = () => {
     }
   };
 
+  const getNextAudioNumber = (audios: RecordedAudio[]): number => {
+    if (audios.length === 0) return 1;
+    
+    const numbers = audios
+      .map(audio => {
+        const match = audio.name.match(/Belanjaan (\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      })
+      .filter(num => !isNaN(num));
+    
+    return numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+  };
+
   const stopRecording = async () => {
     try {
       if (!recording) return;
@@ -54,8 +68,16 @@ const Grocerlist: React.FC = () => {
 
       const uri = recording.getURI();
       if (uri) {
-        const newAudio: RecordedAudio = { id: Date.now().toString(), uri ,done:false};
-        setRecordedAudios((prevAudios) => [...prevAudios, newAudio]);
+        setRecordedAudios((prevAudios) => {
+          const nextNumber = getNextAudioNumber(prevAudios);
+          const newAudio: RecordedAudio = {
+            id: Date.now().toString(),
+            uri,
+            done: false,
+            name: `Belanjaan ${nextNumber}`
+          };
+          return [newAudio,...prevAudios ];
+        });
       }
     } catch (error) {
       console.error('Failed to stop recording', error);
@@ -88,7 +110,7 @@ const Grocerlist: React.FC = () => {
             style={styles.audioCard}
             onPress={() => playAudio(item.uri)}
           >
-            <Text style={styles.audioText}>Audio {item.id}</Text>
+            <Text style={styles.audioText}>{item.name}</Text>
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.listContainer}
