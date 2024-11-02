@@ -4527,6 +4527,11 @@ expo-asset@~8.10.1:
     path-browserify "^1.0.0"
     url-parse "^1.5.9"
 
+expo-av@~13.4.1:
+  version "13.4.1"
+  resolved "https://registry.yarnpkg.com/expo-av/-/expo-av-13.4.1.tgz#83029b3202e64bf060f0a7a24591d93bf7ab728c"
+  integrity sha512-0K8QEFzZeNGrppzYUs8wOtjOyPPkxzlVYbEHM6WzIQOG1uYYNOJkJB3aQHVFXHmz+AzoHwMrUjcschofwaMNeg==
+
 expo-camera@^13.4.3:
   version "13.4.3"
   resolved "https://registry.yarnpkg.com/expo-camera/-/expo-camera-13.4.3.tgz#546b877e3d0bc1228d2a8525c52a838da9fce8c2"
@@ -4602,6 +4607,11 @@ expo-gl@^13.0.1:
   dependencies:
     invariant "^2.2.4"
 
+expo-haptics@~12.4.0:
+  version "12.4.0"
+  resolved "https://registry.yarnpkg.com/expo-haptics/-/expo-haptics-12.4.0.tgz#99ad9d6a8eafb219aee022ec1412a998e1c90d71"
+  integrity sha512-eELhZOO64oJa6AtEUxosatjSENE/tQgF2rVJxDsvRdx8Vgd3uFC+FRoM3nbMVJkxDgAaP3EKOPT1zVM41sNurw==
+
 expo-json-utils@~0.7.0:
   version "0.7.1"
   resolved "https://registry.yarnpkg.com/expo-json-utils/-/expo-json-utils-0.7.1.tgz#efe315c982113204be46419cbc26d4d9a2af145f"
@@ -4653,6 +4663,11 @@ expo-screen-orientation@~6.0.5:
   version "6.0.5"
   resolved "https://registry.yarnpkg.com/expo-screen-orientation/-/expo-screen-orientation-6.0.5.tgz#4fcac69c641522c7e658d4fb20b22de82d732aee"
   integrity sha512-aOOuuQkxNHNxSzfEO037jnD0zYiwBVTvuXeFy/0KntFmuqWmZGaFmFks1uTA2+0wKlbA049kVjkBnA1peybmHQ==
+
+expo-speech@~11.3.0:
+  version "11.3.0"
+  resolved "https://registry.yarnpkg.com/expo-speech/-/expo-speech-11.3.0.tgz#374c6cb4df90f226652a8958729783f7a9a60127"
+  integrity sha512-pJLh8pLuMJRZrg7hzS4JtMwvjbgfCkmoERL45A8vkq8VQFo+2GPT72BMuC9xy1sys7CGZJ8M5yMYTE5saUr1rg==
 
 expo-splash-screen@~0.20.5:
   version "0.20.5"

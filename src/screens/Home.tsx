@@ -1,6 +1,8 @@
 import React from "react";
-import { StyleSheet, View ,Button} from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useEffect } from "react";
+import Button from "../components/Button";
+
 export default function HomeScreen({navigation}:{navigation:any}) {
   useEffect(() => {
   }, []);
@@ -9,16 +11,20 @@ export default function HomeScreen({navigation}:{navigation:any}) {
       <Button
         onPress={() => {
           console.log("button clicked!");
-          navigation.navigate('Grocerlist');
+          navigation.navigate('Grocersee');
         }}
-        title="ahoy"
+        speech="Minggir lu miskin"
+        style={{button:styles.button}}
+        icon={{ name: "camera", size: 240 }}
       />
       <Button
         onPress={() => {
           console.log("button clicked!");
-          navigation.navigate('Grocersee');
+          navigation.navigate('Grocerlist');
         }}
-        title="ahay"
+        speech="Minggir lu miskin"
+        style={{button:styles.button}}
+        icon={{ name: "shoppingcart", size: 240 }}
       />
     </View>
   );

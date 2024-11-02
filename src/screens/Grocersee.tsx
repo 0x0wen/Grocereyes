@@ -40,7 +40,6 @@ export default function Grocersee() {
   const [tfReady, setTfReady] = useState(false);
   const [model, setModel] = useState<posedetection.PoseDetector>();
   const [poses, setPoses] = useState<posedetection.Pose[]>();
-  const [fps, setFps] = useState(0);
   const [orientation, setOrientation] =
     useState<ScreenOrientation.Orientation>();
   const [cameraType, setCameraType] = useState<CameraType>(CameraType.front);
@@ -147,10 +146,6 @@ export default function Grocersee() {
         const poses = await model.estimatePoses(processedTensor);
         const latency = Date.now() - startTs;
 
-        setFps(30);
-        if (latency > 0) {
-        }
-
         setPoses(poses);
 
         // Cleanup tensors
@@ -206,12 +201,6 @@ export default function Grocersee() {
     }
     return <View></View>;
   };
-
-  const renderFps = () => (
-    <View style={styles.fpsContainer}>
-      <Text>FPS: {fps}</Text>
-    </View>
-  );
 
   const renderCameraTypeSwitcher = () => (
     <View style={styles.cameraTypeSwitcher} onTouchEnd={handleSwitchCameraType}>
@@ -292,7 +281,6 @@ export default function Grocersee() {
         cameraTextureHeight={texture.height}
       />
       {renderPose()}
-      {renderFps()}
       {renderCameraTypeSwitcher()}
     </View>
   );
