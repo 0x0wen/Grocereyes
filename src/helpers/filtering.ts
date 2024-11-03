@@ -336,9 +336,39 @@ export class KMeansShoppingAssistant {
         }
         return `Terlihat ${content} di depan Anda`;
       case "multiple_same":
-        content = "sayuran";
-        return `Terlihat ${content}`;
+        if (
+          classes.includes("tomat") ||
+          classes.includes("kubis") ||
+          classes.includes("wortel") ||
+          classes.includes("kentang")
+        ) {
+          return "Terlihat beberapa " + content;
+        }
+        return `Terlihat sayuran`;
       case "category_summary":
+        let count = 0;
+        if (content.includes("tomat")) {
+          content = "tomat";
+          count++;
+        }
+        if (content.includes("kubis")) {
+          content = "kubis";
+          count++;
+        }
+        if (content.includes("kentang")) {
+          content = "kentang";
+          count++;
+        }
+        if (content.includes("wortel")) {
+          content = "wortel";
+          count++;
+        }
+
+        if (count === 1) {
+          return `Terlihat ${content}`;
+        }
+
+        content = "sayuran";
         return `Terlihat beberapa jenis bahan makanan: ${content}`;
       default:
         return "Maaf, terjadi kesalahan";

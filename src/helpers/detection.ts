@@ -224,17 +224,19 @@ export const detectTensor = async (
 
   tf.engine().startScope();
 
-  const processedTensor = tf.tidy(() => {
-    let resized = inputTensor;
-    if (
-      inputTensor.shape[1] !== modelWidth ||
-      inputTensor.shape[2] !== modelHeight
-    ) {
-      resized = tf.image.resizeBilinear(inputTensor, [modelWidth, modelHeight]);
-    }
+  const processedTensor = inputTensor;
 
-    return resized.expandDims(0).div(255.0) as tf.Tensor4D;
-  });
+  // const processedTensor = tf.tidy(() => {
+  //   let resized = inputTensor;
+  //   if (
+  //     inputTensor.shape[1] !== modelWidth ||
+  //     inputTensor.shape[2] !== modelHeight
+  //   ) {
+  //     resized = tf.image.resizeBilinear(inputTensor, [modelWidth, modelHeight]);
+  //   }
+
+  //   return resized.expandDims(0).div(255.0) as tf.Tensor4D;
+  // });
 
   const originalWidth = inputTensor.shape[1];
   const originalHeight = inputTensor.shape[2];
@@ -292,9 +294,9 @@ export const detectTensor = async (
   const nms: tf.Tensor1D = await tf.image.nonMaxSuppressionAsync(
     boxes.boxes as tf.Tensor2D,
     boxes.scores,
-    3, // Reduced from 500 to 200 to be more strict
-    0.7, // IOU threshold
-    0.7 // Score threshold
+    100, // Reduced from 500 to 200 to be more strict
+    0.3, // IOU threshold
+    0.5 // Score threshold
   );
 
   // Debug logging after NMS

@@ -154,24 +154,30 @@ export default function Grocersee() {
       try {
         const imageTensor = images.next().value;
 
-        // Remove the normalization here - just pass the raw tensor
         if (!imageTensor) {
           console.log("No image tensor received");
           rafId.current = requestAnimationFrame(loop);
           return;
         }
 
+        const processed = tf.tidy(() => {
+          const imageFloat = tf.cast(imageTensor, "float32");
+          const normalized = imageFloat.div(tf.scalar(255.0));
+          const input = normalized.expandDims(0) as tf.Tensor4D;
+          return input;
+        });
+
+        // Remove the normalization here - just pass the raw tensor
+
         const startTs = Date.now();
 
         if (model.net) {
-          const result = await detectTensor(
-            imageTensor as tf.Tensor4D,
-            model as DetectionModel
-          );
+          const result = await detectTensor(processed, model as DetectionModel);
 
           if (result) {
-            console.log("Detection Result:", result);
+            // console.log("Detection Result:", result);
             setDetection(result);
+            speak(result);
           }
         }
 
