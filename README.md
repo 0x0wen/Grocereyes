@@ -1,4 +1,4 @@
-# Welcome to your Expo app 👋
+# 🏆 1st Winner forPlay IT 2024 hackathon - a mobile app that helps visually impaired people grocery shops, that runs without any internet connection.
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
