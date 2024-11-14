@@ -1,6 +1,6 @@
-# 🏆 1st Winner forPlay IT 2024 hackathon - a mobile app that helps visually impaired people grocery shops, that runs without any internet connection.
+# 🏆 1st Winner forPlay IT 2024 hackathon - Grocereyes
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile app that helps visually impaired people grocery shops, that runs without any internet connection.
 
 ## Get started
 
